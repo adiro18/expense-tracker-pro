@@ -1,0 +1,9 @@
+# Local (docker compose) Prometheus config - same job as the Kubernetes one,
+# only the target differs (compose service name instead of the K8s Service DNS).
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: spendwise-app
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app:8000"]

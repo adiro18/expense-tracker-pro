@@ -1,0 +1,65 @@
+# Local stack: MySQL 8.0 + Spendwise app.
+#   docker compose up -d --build
+#   docker compose exec app flask seed
+# With monitoring (Prometheus + Grafana):
+#   docker compose --profile monitoring up -d --build
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: spendwise
+      MYSQL_USER: ${DB_USER:-spendwise_admin}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-localdevpassword}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-localrootpassword}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  app:
+    build: .
+    image: expense-tracker-pro:local
+    # Apply migrations first, then start the same gunicorn command as the Dockerfile
+    command: sh -c "flask db upgrade && exec gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 60 wsgi:app"
+    environment:
+      APP_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-local-compose-only-secret-change-me}
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: spendwise
+      DB_USER: ${DB_USER:-spendwise_admin}
+      DB_PASSWORD: ${DB_PASSWORD:-localdevpassword}
+      DEFAULT_CURRENCY: INR
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["monitoring"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on: [app]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: ["monitoring"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus]
+
+volumes:
+  mysql_data:
