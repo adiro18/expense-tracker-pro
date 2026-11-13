@@ -1,0 +1,4 @@
+# Force LF so shell scripts / Jenkinsfile work in Linux containers even when cloned on Windows
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
