@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spendwise
+  labels:
+    app: spendwise
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spendwise
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   # keep both pods serving during an update
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: spendwise
+    spec:
+      # Prefer putting the 2 replicas on different nodes (survives losing a node)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: spendwise
+      # Runs before the app starts: apply DB migrations (Alembic) once per rollout/pod
+      initContainers:
+        - name: migrate
+          image: adiro18/expense-tracker-pro:latest
+          command: ["flask", "db", "upgrade"]
+          envFrom:
+            - configMapRef:
+                name: spendwise-config
+            - secretRef:
+                name: spendwise-secrets
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { cpu: 250m, memory: 512Mi }
+      containers:
+        - name: spendwise
+          image: adiro18/expense-tracker-pro:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: spendwise-config
+            - secretRef:
+                name: spendwise-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 250m
+              memory: 512Mi   # 256Mi got OOMKilled with 2 gunicorn workers
+          # Ready = DB reachable; only ready pods receive traffic from the Service
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          # Live = process responding; failing this makes Kubernetes restart the container
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20

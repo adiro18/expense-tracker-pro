@@ -1,0 +1,15 @@
+# Creates an AWS load balancer with a public hostname (kubectl get svc spendwise)
+apiVersion: v1
+kind: Service
+metadata:
+  name: spendwise
+  labels:
+    app: spendwise
+spec:
+  type: LoadBalancer
+  selector:
+    app: spendwise
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
