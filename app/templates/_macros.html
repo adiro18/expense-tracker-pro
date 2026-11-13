@@ -1,0 +1,20 @@
+{# Renders a form field with its label and field-level error messages #}
+{% macro field(f, placeholder='') %}
+  <div class="field {{ 'has-error' if f.errors }}">
+    {% if f.type == 'BooleanField' %}
+      <label class="check">{{ f() }} {{ f.label.text }}</label>
+    {% else %}
+      {{ f.label }}
+      {{ f(placeholder=placeholder, **({'step': '0.01'} if f.type == 'DecimalField' else {})) }}
+    {% endif %}
+    {% for e in f.errors %}<div class="error">{{ e }}</div>{% endfor %}
+  </div>
+{% endmacro %}
+
+{# Small POST form with CSRF token for delete buttons #}
+{% macro delete_button(action, confirm='Delete this item?') %}
+  <form method="post" action="{{ action }}" class="inline" onsubmit="return confirm('{{ confirm }}')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+  </form>
+{% endmacro %}

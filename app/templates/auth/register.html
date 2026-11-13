@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h2>Create your account</h2>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.username) }}
+    {{ field(form.email, 'you@example.com') }}
+    {{ field(form.password) }}
+    {{ field(form.confirm) }}
+    <button type="submit" class="btn btn-block">Create account</button>
+  </form>
+  <p class="muted small">Already registered? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+</section>
+{% endblock %}

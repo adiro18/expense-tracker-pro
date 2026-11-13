@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import delete_button %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Accounts</h1>
+  <a class="btn" href="{{ url_for('accounts.create') }}">+ New account</a>
+</div>
+<section class="stats">
+  <div class="stat"><span class="stat-label">Total balance</span><span class="stat-value">{{ total|money }}</span></div>
+</section>
+<section class="account-grid">
+  {% for acc, balance in balances %}
+  <div class="card account-card">
+    <div class="account-type">{{ acc.type.replace('_', ' ')|title }}</div>
+    <h3>{{ acc.name }}</h3>
+    <div class="stat-value {{ 'neg' if balance < 0 }}">{{ balance|money }}</div>
+    <div class="muted small">Opening: {{ acc.opening_balance|money }}</div>
+    <div class="row-actions">
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('transactions.index', account=acc.id) }}">Transactions</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('accounts.edit', account_id=acc.id) }}">Edit</a>
+      {{ delete_button(url_for('accounts.delete', account_id=acc.id), 'Delete this account?') }}
+    </div>
+  </div>
+  {% else %}
+  <div class="card"><p class="muted">No accounts yet. Add your bank account, cash wallet, cards or UPI.</p></div>
+  {% endfor %}
+</section>
+{% endblock %}

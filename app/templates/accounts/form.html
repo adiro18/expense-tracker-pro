@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h2>{{ title }}</h2>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.name, 'e.g. HDFC Savings') }}
+    {{ field(form.type) }}
+    {{ field(form.opening_balance, '0.00') }}
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="{{ url_for('accounts.index') }}">Cancel</a>
+      <button type="submit" class="btn">Save</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

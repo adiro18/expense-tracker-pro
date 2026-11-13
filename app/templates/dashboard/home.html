@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="month-nav">
+      <a href="{{ url_for('dashboard.home', month=prev_month) }}" class="btn btn-sm btn-ghost">‹</a>
+      <strong>{{ month_label }}</strong>
+      <a href="{{ url_for('dashboard.home', month=next_month) }}" class="btn btn-sm btn-ghost">›</a>
+    </div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{{ url_for('dashboard.export_csv', month=month_value) }}">⬇ Export CSV</a>
+    <a class="btn" href="{{ url_for('transactions.create') }}">+ Add transaction</a>
+  </div>
+</div>
+
+<section class="stats">
+  <div class="stat"><span class="stat-label">Income</span><span class="stat-value pos">{{ income|money }}</span></div>
+  <div class="stat"><span class="stat-label">Expense</span><span class="stat-value neg">{{ expense|money }}</span></div>
+  <div class="stat"><span class="stat-label">Net this month</span>
+    <span class="stat-value {{ 'pos' if net >= 0 else 'neg' }}">{{ net|money }}</span></div>
+  <div class="stat"><span class="stat-label">Savings rate</span><span class="stat-value">{{ savings_rate }}%</span></div>
+  <div class="stat"><span class="stat-label">Forecast month-end spend</span>
+    <span class="stat-value">{{ forecast|money }}</span>
+    <span class="stat-hint">spent so far ÷ days elapsed × days in month</span></div>
+  <div class="stat"><span class="stat-label">Total balance (all accounts)</span><span class="stat-value">{{ total_balance|money }}</span></div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h3>Spending by category</h3>
+    {% if cat_values %}
+      <div class="chart-box"><canvas id="categoryChart"></canvas></div>
+    {% else %}<p class="muted">No expenses this month.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Daily spending</h3>
+    <div class="chart-box"><canvas id="dailyChart"></canvas></div>
+  </div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h3>Income vs expense (6 months)</h3>
+    <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Budgets <a class="small" href="{{ url_for('budgets.index', month=month_value) }}">manage</a></h3>
+    {% for row in budgets %}
+      <div class="budget-row">
+        <div class="budget-meta"><span>{{ row.budget.category.name }}</span>
+          <span class="muted small">{{ row.spent|money }} / {{ row.budget.amount|money }}</span></div>
+        <div class="progress"><div class="bar {{ row.status }}" style="width: {{ [row.percent, 100]|min }}%"></div></div>
+      </div>
+    {% else %}
+      <p class="muted">No budgets for this month. <a href="{{ url_for('budgets.create') }}">Create one</a>.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <h3>Recent transactions <a class="small" href="{{ url_for('transactions.index') }}">view all</a></h3>
+  {% include "transactions/_table.html" with context %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  window.SPENDWISE = {
+    currency: {{ currency_symbol|tojson }},
+    category: { labels: {{ cat_labels|tojson }}, values: {{ cat_values|tojson }} },
+    daily: { labels: {{ day_labels|tojson }}, values: {{ day_values|tojson }} },
+    monthly: { labels: {{ m_labels|tojson }}, income: {{ m_income|tojson }}, expense: {{ m_expense|tojson }} }
+  };
+</script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

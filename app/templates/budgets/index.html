@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import delete_button %}
+{% block title %}Budgets{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Budgets</h1>
+  <div class="actions">
+    <form method="get" class="inline-form">
+      <input type="month" name="month" value="{{ period }}" onchange="this.form.submit()">
+    </form>
+    <a class="btn" href="{{ url_for('budgets.create') }}">+ New budget</a>
+  </div>
+</div>
+<section class="card">
+  {% for row in rows %}
+  <div class="budget-row big">
+    <div class="budget-meta">
+      <strong>{{ row.budget.category.name }}</strong>
+      <span class="small {{ 'neg' if row.status == 'over' }}">
+        {{ row.spent|money }} of {{ row.budget.amount|money }} · {{ row.percent }}%
+        {% if row.remaining >= 0 %}({{ row.remaining|money }} left){% else %}(over by {{ (-row.remaining)|money }}){% endif %}
+      </span>
+    </div>
+    <div class="progress"><div class="bar {{ row.status }}" style="width: {{ [row.percent, 100]|min }}%"></div></div>
+    <div class="row-actions">
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('budgets.edit', budget_id=row.budget.id) }}">Edit</a>
+      {{ delete_button(url_for('budgets.delete', budget_id=row.budget.id), 'Delete this budget?') }}
+    </div>
+  </div>
+  {% else %}
+  <p class="muted">No budgets for {{ period }}.</p>
+  {% endfor %}
+</section>
+{% endblock %}

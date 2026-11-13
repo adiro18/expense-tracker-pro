@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Transactions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Transactions</h1>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{{ url_for('dashboard.export_csv', **filters) }}">⬇ Export CSV</a>
+    <a class="btn" href="{{ url_for('transactions.create') }}">+ Add transaction</a>
+  </div>
+</div>
+
+<form method="get" class="card filters">
+  <div class="field"><label for="month">Month</label>
+    <input type="month" id="month" name="month" value="{{ filters.get('month', '') }}"></div>
+  <div class="field"><label for="category">Category</label>
+    <select id="category" name="category"><option value="">All</option>
+      {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if filters.get('category')|string == c.id|string }}>{{ c.name }}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label for="account">Account</label>
+    <select id="account" name="account"><option value="">All</option>
+      {% for a in accounts %}<option value="{{ a.id }}" {{ 'selected' if filters.get('account')|string == a.id|string }}>{{ a.name }}</option>{% endfor %}
+    </select></div>
+  <div class="filter-actions">
+    <button type="submit" class="btn">Filter</button>
+    <a class="btn btn-ghost" href="{{ url_for('transactions.index') }}">Reset</a>
+  </div>
+</form>
+
+<section class="card">
+  <p class="muted small">{{ page.total }} transaction{{ 's' if page.total != 1 }}</p>
+  {% include "transactions/_table.html" with context %}
+  {% if page.pages > 1 %}
+  <div class="pager">
+    {% set args = filters.to_dict() %}
+    {% if page.has_prev %}<a class="btn btn-sm btn-ghost" href="{{ url_for('transactions.index', **dict(args, page=page.prev_num)) }}">‹ Prev</a>{% endif %}
+    <span class="muted small">Page {{ page.page }} of {{ page.pages }}</span>
+    {% if page.has_next %}<a class="btn btn-sm btn-ghost" href="{{ url_for('transactions.index', **dict(args, page=page.next_num)) }}">Next ›</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
