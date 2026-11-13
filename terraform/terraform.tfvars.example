@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars (gitignored) to override defaults.
+# Do NOT put db_password here - export it instead:
+#   export TF_VAR_db_password='a-strong-password'
+aws_region         = "ap-south-1"
+project_name       = "spendwise"
+db_username        = "spendwise_admin"
+cluster_version    = "1.31"
+mysql_version      = "8.0"
+node_instance_type = "t3.micro"
+node_min_size      = 1
+node_max_size      = 4
+node_desired_size  = 3
