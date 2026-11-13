@@ -1,0 +1,65 @@
+# Deploys Prometheus + Grafana into the "monitoring" namespace with kubectl.
+#
+#   ansible-playbook -i inventory.ini playbook.yml
+#
+# WSL calling the Windows kubectl.exe needs a Windows-style path:
+#   ansible-playbook -i inventory.ini playbook.yml \
+#     -e kubectl=kubectl.exe -e manifests_dir=E:/Projects/expense-tracker-pro/ansible/manifests
+#
+# Every task is idempotent: `kubectl apply` only changes what differs, and a task is
+# reported "changed" only when kubectl actually created/configured something.
+- name: Deploy Spendwise monitoring stack (Prometheus + Grafana)
+  hosts: local
+  gather_facts: false
+  vars:
+    kubectl: kubectl
+    manifests_dir: "{{ playbook_dir }}/manifests"
+    namespace: monitoring
+
+  tasks:
+    # argv lists (instead of one command string) keep paths with spaces intact
+    - name: 1. Apply monitoring namespace
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", apply, -f, "{{ manifests_dir }}/namespace.yaml"]
+      register: result
+      changed_when: "' created' in result.stdout or ' configured' in result.stdout"
+
+    - name: 2. Apply Prometheus config and Prometheus deployment/service
+      ansible.builtin.command:
+        argv:
+          - "{{ kubectl }}"
+          - apply
+          - -f
+          - "{{ manifests_dir }}/prometheus-config.yaml"
+          - -f
+          - "{{ manifests_dir }}/prometheus.yaml"
+      register: result
+      changed_when: "' created' in result.stdout or ' configured' in result.stdout"
+
+    - name: 3. Apply Grafana datasource and dashboard config
+      ansible.builtin.command:
+        argv:
+          - "{{ kubectl }}"
+          - apply
+          - -f
+          - "{{ manifests_dir }}/grafana-datasource.yaml"
+          - -f
+          - "{{ manifests_dir }}/grafana-dashboard.yaml"
+      register: result
+      changed_when: "' created' in result.stdout or ' configured' in result.stdout"
+
+    - name: 4. Apply Grafana deployment/service
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", apply, -f, "{{ manifests_dir }}/grafana.yaml"]
+      register: result
+      changed_when: "' created' in result.stdout or ' configured' in result.stdout"
+
+    - name: 5. Wait for Prometheus pod to be ready
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", -n, "{{ namespace }}", wait, --for=condition=ready, pod, -l, app=prometheus, --timeout=180s]
+      changed_when: false
+
+    - name: 6. Wait for Grafana pod to be ready
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", -n, "{{ namespace }}", wait, --for=condition=ready, pod, -l, app=grafana, --timeout=180s]
+      changed_when: false

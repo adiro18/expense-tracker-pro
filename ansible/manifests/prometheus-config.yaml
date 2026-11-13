@@ -1,0 +1,17 @@
+# Static scrape target (no Kubernetes service discovery / RBAC needed - deliberate,
+# keeps the demo simple). The Service load-balances scrapes across the app pods;
+# each pod merges its gunicorn workers' metrics.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: spendwise-app
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["spendwise.default.svc.cluster.local:80"]
